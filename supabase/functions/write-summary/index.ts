@@ -1,3 +1,4 @@
+// verify_jwt = true — callers must send the anon key
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",

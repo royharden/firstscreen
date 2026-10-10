@@ -1,10 +1,10 @@
 project_id = "firstscreen"
 
 [functions.fetch-page]
-verify_jwt = false
+verify_jwt = true
 
 [functions.jev-panel]
-verify_jwt = false
+verify_jwt = true
 
 [functions.write-summary]
-verify_jwt = false
+verify_jwt = true
