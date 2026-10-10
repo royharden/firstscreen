@@ -10,7 +10,6 @@ const DEFAULT_MODEL = "gpt-6-luna";
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
-
 function flagPromptInjection(text: string): boolean {
   return /ignore (all |any )?(previous|prior) instructions|disregard (all |any )?(previous|prior)|you are now|rate (this|it) (a )?10\s*\/\s*10|give (this|it) (a )?10\s*\/\s*10|forget everything/i.test(
     text,
@@ -118,6 +117,16 @@ Deno.serve(async (req: Request) => {
       mode?: string;
     };
     if (!first_screen || !aggregate) return json({ error: "first_screen and aggregate required" }, 400);
+
+    // Daily usage cap (service-role only; fail closed on error)
+    const { createClient } = await import("npm:@supabase/supabase-js@2.57.4");
+    const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: capResult, error: capError } = await supabaseAdmin.rpc("increment_usage", {
+      fn_name: "write-summary",
+      cap: 200,
+    });
+    if (capError) return json({ error: "Usage counter unavailable." }, 503);
+    if (capResult === -1) return json({ error: "Demo daily limit reached - Offline demo still works" }, 429);
 
     // Flag instruction-like text found anywhere in page data (flag, don't obey)
     const pageText = JSON.stringify(first_screen);

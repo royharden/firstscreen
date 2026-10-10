@@ -194,6 +194,19 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Daily usage cap (service-role only; fail closed on error)
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: capResult, error: capError } = await supabase.rpc("increment_usage", {
+      fn_name: "jev-panel",
+      cap: 200,
+    });
+    if (capError) {
+      return new Response(JSON.stringify({ error: "Usage counter unavailable." }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (capResult === -1) {
+      return new Response(JSON.stringify({ error: "Demo daily limit reached - Offline demo still works" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const blockIds = (first_screen.blocks as { id: string }[]).map((b) => b.id).slice(0, 12);
     const state = {
       personas: PERSONAS,
@@ -202,8 +215,6 @@ Deno.serve(async (req: Request) => {
     };
     const questions = buildQuestions(blockIds);
     const count = questionCount(questions);
-
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     let result: Awaited<ReturnType<typeof callJev>>;
     let scope = "all";

@@ -305,8 +305,16 @@ Deno.serve(async (req: Request) => {
     const parsed = normalizeUrl(url);
     if (!parsed) return json({ error: "URL not allowed. http/https, public hosts, standard ports only." }, 400);
 
-    // One analysis per URL per minute (durable across instances via the database)
+    // Daily usage cap (service-role only; fail closed on error)
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: capResult, error: capError } = await supabaseAdmin.rpc("increment_usage", {
+      fn_name: "fetch-page",
+      cap: 200,
+    });
+    if (capError) return json({ error: "Usage counter unavailable." }, 503);
+    if (capResult === -1) return json({ error: "Demo daily limit reached - Offline demo still works" }, 429);
+
+    // One analysis per URL per minute (durable across instances via the database)
     const cutoff = new Date(Date.now() - 60_000).toISOString();
     const { data: recent } = await supabaseAdmin
       .from("analyses")
