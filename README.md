@@ -24,8 +24,8 @@ flowchart LR
 ## Rules & scope
 
 - **Passive fetch only.** `GET` the page HTML plus up to 5 linked same-origin stylesheets. No form submits, logins, or crawling beyond the one URL. http/https only.
-- **SSRF guard.** localhost, private/link-local/CGNAT ranges, `169.254.169.254`, `.internal`/`.local`, and non-standard ports are blocked. Redirects are followed manually (max 5) and re-checked at every hop.
-- **Caps.** 10 requests, 2 MB per file, 15 s per analysis. One analysis per URL per minute (enforced per workspace).
+- **SSRF guard.** localhost, private/link-local/CGNAT/unique-local/IPv4-mapped/reserved ranges, `169.254.169.254`, `.internal`/`.local`, and non-standard ports are blocked. Redirects are followed manually (max 3) and re-checked at every hop, including an A + AAAA DNS lookup that must resolve only to public addresses (DNS failures are refused).
+- **Caps.** 10 requests, 2 MB per file (streamed, aborted once exceeded), 15 s per analysis. One analysis per URL per minute (enforced per workspace). Every paid upstream call (Jev, the writer LLM, the optional screenshot service) reserves one unit of a daily cap (default 200 per function) right before it is made; the cap fails closed.
 - **Untrusted page content.** Page text is wrapped as data in every Jev and LLM call. Instruction-like text ("ignore previous instructions", "rate this 10/10") is flagged in the UI and never obeyed.
 - **Secrets stay server-side.** All API keys live in Supabase Edge Function secrets. Nothing secret is in the browser bundle.
 - **No JS execution.** The page is parsed statically, so the fold position is approximate and SPA shells are detected and reported ("content rendered only by JS, so the analysis is limited").
@@ -63,6 +63,7 @@ Demo fixtures with recorded Jev responses are bundled — the **Load demo** butt
 | `OPENAI_MODEL` | Edge Function secret | no | Writer model (default `gpt-6-luna`) |
 | `OPENAI_BASE_URL` | Edge Function secret | no | Writer API base (default `https://api.openai.com/v1`) |
 | `SCREENSHOT_API_URL` | Edge Function secret | no | Template URL with `{url}`, `{w}`, `{h}`; enables real screenshots |
+| `DAILY_CALL_LIMIT` | Edge Function secret | no | Per-function daily cap on upstream calls (default `200`) |
 
 `.env.example` lists only the two `VITE_` vars.
 
