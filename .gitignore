@@ -21,3 +21,19 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Local credentials, generated artifacts, and archives
+.env.*
+.creds/
+ArchiveManager-creds.txt
+*.pem
+*.key
+*.p12
+*.pfx
+*.zip
+.venv/
+__pycache__/
+.pytest_cache/
+.cache/
+coverage/
+build/
